@@ -11,6 +11,7 @@ from ReportUtils import ReportRamTask
 
 import hashlib
 
+# TODO: Correct fr3 session numbers so that parse_biomarker_output gets passed the right file
 
 class EventPreparation(ReportRamTask):
     def __init__(self, mark_as_completed=True):

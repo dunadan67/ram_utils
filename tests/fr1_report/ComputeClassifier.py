@@ -193,11 +193,6 @@ class ComputeClassifier(ReportRamTask):
         events = self.get_passed_object(task + '_events')
         self.pow_mat = normalize_sessions(self.get_passed_object('pow_mat'), events)
 
-        #n1 = np.sum(events.recalled)
-        #n0 = len(events) - n1
-        #w0 = (2.0/n0) / ((1.0/n0)+(1.0/n1))
-        #w1 = (2.0/n1) / ((1.0/n0)+(1.0/n1))
-
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self.lr_classifier = LogisticRegression(C=self.params.C, penalty=self.params.penalty_type, class_weight='auto', solver='liblinear')
