@@ -13,13 +13,23 @@ import hashlib
 
 
 class ComputePowers(ReportRamTask):
-    def __init__(self, params, task,mark_as_completed=True):
-        super(ComputePowers, self).__init__(mark_as_completed)
+    def __init__(self, params, task,mark_as_completed=True,name=None):
+        super(ComputePowers, self).__init__(mark_as_completed,name=name)
         self.params = params
         self.pow_mat = None
         self.samplerate = None
         self.wavelet_transform = MorletWaveletTransform()
         self.task = task
+
+    def restore(self):
+        subject = self.pipeline.subject
+        task = self.pipeline.task
+
+        self.pow_mat = joblib.load(self.get_path_to_resource_in_workspace(subject + '-' + task + '-pow_mat.pkl'))
+        self.samplerate = joblib.load(self.get_path_to_resource_in_workspace(subject + '-samplerate.pkl'))
+
+        self.pass_object('pow_mat', self.pow_mat)
+        self.pass_object('samplerate', self.samplerate)
 
     def run(self):
         events = self.get_events()

@@ -10,6 +10,12 @@ from ptsa.data.readers.IndexReader import JsonIndexReader
 from ReportUtils import ReportRamTask
 
 import hashlib
+def normalize_sessions(pow_mat, events):
+    sessions = np.unique(events.session)
+    for sess in sessions:
+        sess_event_mask = (events.session == sess)
+        pow_mat[sess_event_mask] = zscore(pow_mat[sess_event_mask], axis=0, ddof=1)
+    return pow_mat
 
 class ModelOutput(object):
     def __init__(self,true_labels,probs):
@@ -81,6 +87,61 @@ class ModelOutput(object):
         self.pooled_std = sqrt((var1*(self.n1-1) + var0*(self.n0-1)) / (self.n1+self.n0-2))
 
 class ComputeClassifier(ReportRamTask):
+
+    def run(self):
+        subject = self.pipeline.subject
+        task = self.pipeline.task
+
+        events = self.get_passed_object(task + '_events')
+        self.pow_mat = normalize_sessions(self.get_passed_object('pow_mat'), events)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.lr_classifier = LogisticRegression(C=self.params.C, penalty=self.params.penalty_type, class_weight='auto', solver='liblinear')
+
+        event_sessions = events.session
+        recalls = events.recalled
+
+        sessions = np.unique(event_sessions)
+        if len(sessions) > 1:
+            print 'Performing permutation test'
+            self.perm_AUCs = self.permuted_loso_AUCs(event_sessions, recalls)
+
+            print 'Performing leave-one-session-out xval'
+            self.run_loso_xval(event_sessions, recalls, permuted=False)
+        else:
+            sess = sessions[0]
+            event_lists = events.list
+
+            print 'Performing in-session permutation test'
+            self.perm_AUCs = self.permuted_lolo_AUCs(sess, event_lists, recalls)
+
+            print 'Performing leave-one-list-out xval'
+            self.run_lolo_xval(sess, event_lists, recalls, permuted=False)
+
+        print 'AUC =', self.xval_output[-1].auc
+
+        self.pvalue = np.sum(self.perm_AUCs >= self.xval_output[-1].auc) / float(self.perm_AUCs.size)
+        print 'Perm test p-value =', self.pvalue
+
+        print 'thresh =', self.xval_output[-1].jstat_thresh, 'quantile =', self.xval_output[-1].jstat_quantile
+
+        # Finally, fitting classifier on all available data
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.lr_classifier.fit(self.pow_mat, recalls)
+
+        self.pass_object('lr_classifier', self.lr_classifier)
+        self.pass_object('xval_output', self.xval_output)
+        self.pass_object('perm_AUCs', self.perm_AUCs)
+        self.pass_object('pvalue', self.pvalue)
+
+        joblib.dump(self.lr_classifier, self.get_path_to_resource_in_workspace(subject + '-' + task + '-lr_classifier.pkl'))
+        joblib.dump(self.xval_output, self.get_path_to_resource_in_workspace(subject + '-' + task + '-xval_output.pkl'))
+        joblib.dump(self.perm_AUCs, self.get_path_to_resource_in_workspace(subject + '-' + task + '-perm_AUCs.pkl'))
+        joblib.dump(self.pvalue, self.get_path_to_resource_in_workspace(subject + '-' + task + '-pvalue.pkl'))
+
+
     def __init__(self, params, mark_as_completed=True,name=None):
         super(ComputeClassifier,self).__init__(mark_as_completed,name=name)
         self.params = params
@@ -141,7 +202,7 @@ class ComputeClassifier(ReportRamTask):
         sessions = np.unique(events.session)
 
         insample_masks  = [events.session!=sess | (events.list!=lst) for (sess,lst) in
-                           (sess,np.unique(events[events.session==sess].list) for sess in sessions)]
+                           ((sess,np.unique(events[events.session==sess].list)) for sess in sessions)]
         return self.run_xval(insample_masks,recalls,permuted)
 
 

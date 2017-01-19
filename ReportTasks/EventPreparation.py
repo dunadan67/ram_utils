@@ -7,9 +7,10 @@ import numpy as np
 
 class EventPreparation(ReportRamTask):
     def __init__(self,tasks,mark_as_completed=False,name=None):
-        super(ReportRamTask,self).__init__(mark_as_completed,name=name)
+        super(ReportRamTask,self).__init__(mark_as_completed)
         self.tasks=tasks
         self.events = None
+        self.set_name(name)
 
     def load_events(self,task):
         '''
@@ -31,13 +32,16 @@ class EventPreparation(ReportRamTask):
         return np.concatenate(events,0).view(np.recarray)
 
     def pass_events(self):
+        task = self.pipeline.task
         events=self.events
         self.pass_object('all_events',events)
-        self.pass_object('events', events[events.type=='WORD'])
+        self.pass_object(task+'_events', events[events.type=='WORD'])
 
     def run(self):
         self.events = np.concatenate([self.load_events(task) for task in self.tasks],0).view(np.recarray)
         self.pass_events()
+
+
 
 
 
