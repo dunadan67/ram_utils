@@ -8,8 +8,8 @@ class ReportRamTask(RamTask):
     def __init__(self, mark_as_completed,name=None):
         super(ReportRamTask, self).__init__(mark_as_completed=mark_as_completed)
         self.hash = md5()
-        self.set_name(name)
-
+        if name is not None:
+            self.set_name(name)
 
     def get_code_data(self):
         """

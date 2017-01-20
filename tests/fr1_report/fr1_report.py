@@ -11,8 +11,8 @@ from os.path import *
 from ReportUtils import CMLParser,ReportPipeline
 
 cml_parser = CMLParser(arg_count_threshold=1)
-cml_parser.arg('--subject','R1202M')
-cml_parser.arg('--task','catFR1')
+cml_parser.arg('--subject','R1111M')
+cml_parser.arg('--task','FR1')
 cml_parser.arg('--workspace-dir','/scratch/leond/FR_reports')
 cml_parser.arg('--mount-point','')
 #cml_parser.arg('--recompute-on-no-status')
@@ -23,23 +23,25 @@ print sys.path
 args = cml_parser.parse()
 
 
-from FR1EventPreparation import FR1EventPreparation
-
-from RepetitionRatio import RepetitionRatio
-
-from ComputeFR1Powers import ComputeFR1Powers
-
-from MontagePreparation import MontagePreparation
-
-from ComputeFR1HFPowers import ComputeFR1HFPowers
+# from FR1EventPreparation import FR1EventPreparation
+#
+# from RepetitionRatio import RepetitionRatio
+#
+# from ComputeFR1Powers import ComputeFR1Powers
+#
+# from MontagePreparation import MontagePreparation
+#
+# from ComputeFR1HFPowers import ComputeFR1HFPowers
 
 from ComputeTTest import ComputeTTest
 
-from ComputeClassifier import ComputeClassifier
+# from ComputeClassifier import ComputeClassifier
 
 from ComposeSessionSummary import ComposeSessionSummary
 
 from GenerateReportTasks import *
+
+from ReportTasks import EventPreparation,MontagePreparation,ComputeClassifier,ComputePowers,RepetitionRatio
 
 
 # turn it into command line options
@@ -69,8 +71,12 @@ class Params(object):
 
         self.n_perm = 200
 
-
 params = Params()
+hfparams=Params()
+
+hfparams.fr1_buf=1.0
+hfparams.fr1_end_time = 1.6
+hfparams.freqs = hfparams.hfs
 
 
 
@@ -80,18 +86,18 @@ report_pipeline = ReportPipeline(subject=args.subject, task=args.task,experiment
                                  recompute_on_no_status=args.recompute_on_no_status)
 
 
-report_pipeline.add_task(FR1EventPreparation(mark_as_completed=False))
+report_pipeline.add_task(EventPreparation(mark_as_completed=False,name='FR1EventPreparation',tasks=[args.task]))
 
 report_pipeline.add_task(MontagePreparation(params, mark_as_completed=False))
 
 if 'cat' in args.task:
     report_pipeline.add_task(RepetitionRatio(mark_as_completed=False))
 
-report_pipeline.add_task(ComputeFR1Powers(params=params, mark_as_completed=True))
-
-report_pipeline.add_task(ComputeFR1HFPowers(params=params, mark_as_completed=True))
+report_pipeline.add_task(ComputePowers(params=hfparams, mark_as_completed=True,name='ComputeFR1HFPowers',task=args.task))
 
 report_pipeline.add_task(ComputeTTest(params=params, mark_as_completed=False))
+
+report_pipeline.add_task(ComputePowers(params=params, mark_as_completed=True,name='ComputeFR1Powers',task=args.task))
 
 report_pipeline.add_task(ComputeClassifier(params=params, mark_as_completed=True))
 

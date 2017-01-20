@@ -41,11 +41,13 @@ class ComposeSessionSummary(ReportRamTask):
         subject = self.pipeline.subject
         task = self.pipeline.task
 
-        events = self.get_passed_object(task + '_events')
-        math_events = self.get_passed_object(task + '_math_events')
-        intr_events = self.get_passed_object(task + '_intr_events')
-        rec_events = self.get_passed_object(task + '_rec_events')
-        all_events = self.get_passed_object(task + '_all_events')
+        all_events = self.get_passed_object('all_events')
+        events = self.get_passed_object('events')
+        math_events = all_events[all_events.type == 'PROB']
+        rec_events = all_events[all_events.type == 'REC_WORD']
+        intr_events = rec_events[(rec_events.intrusion != -999) & (rec_events.intrusion != 0)]
+
+
         monopolar_channels = self.get_passed_object('monopolar_channels')
         bp_tal_structs = self.get_passed_object('bp_tal_structs')
 
