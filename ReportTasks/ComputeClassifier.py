@@ -86,14 +86,29 @@ class ModelOutput(object):
 
         self.pooled_std = sqrt((var1*(self.n1-1) + var0*(self.n0-1)) / (self.n1+self.n0-2))
 
+
 class ComputeClassifier(ReportRamTask):
+    def __init__(self, params, mark_as_completed=True,name=None):
+        super(ComputeClassifier,self).__init__(mark_as_completed,name=name)
+        self.params = params
+        self.pow_mat = None
+        self.lr_classifier = None
+        self.xval_output = dict()   # ModelOutput per session; xval_output[-1] is across all sessions
+        self.perm_AUCs = None
+        self.pvalue = None
+
+    def get_events(self):
+        return self.get_passed_object(self.pipeline.task+'_events')
+
+    def get_powers(self):
+        self.pow_mat = self.get_passed_object(self.pipeline.task+'_pow_mat')
 
     def run(self):
         subject = self.pipeline.subject
         task = self.pipeline.task
 
-        events = self.get_passed_object(task + '_events')
-        self.pow_mat = normalize_sessions(self.get_passed_object('pow_mat'), events)
+        events = self.get_events()
+        self.get_powers()
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -114,7 +129,7 @@ class ComputeClassifier(ReportRamTask):
             event_lists = events.list
 
             print 'Performing in-session permutation test'
-            self.perm_AUCs = self.permuted_lolo_AUCs(sess, event_lists, recalls)
+            self.perm_AUCs = self.permuted_lolo_AUCs(events)
 
             print 'Performing leave-one-list-out xval'
             self.run_lolo_xval(sess, event_lists, recalls, permuted=False)
@@ -142,14 +157,6 @@ class ComputeClassifier(ReportRamTask):
         joblib.dump(self.pvalue, self.get_path_to_resource_in_workspace(subject + '-' + task + '-pvalue.pkl'))
 
 
-    def __init__(self, params, mark_as_completed=True,name=None):
-        super(ComputeClassifier,self).__init__(mark_as_completed,name=name)
-        self.params = params
-        self.pow_mat = None
-        self.lr_classifier = None
-        self.xval_output = dict()   # ModelOutput per session; xval_output[-1] is across all sessions
-        self.perm_AUCs = None
-        self.pvalue = None
 
     def xval_test_type(self, events):
         event_sessions = events.session
@@ -204,7 +211,6 @@ class ComputeClassifier(ReportRamTask):
         insample_masks  = [events.session!=sess | (events.list!=lst) for (sess,lst) in
                            ((sess,np.unique(events[events.session==sess].list)) for sess in sessions)]
         return self.run_xval(insample_masks,recalls,permuted)
-
 
     def permuted_loso_AUCs(self, event_sessions, recalls):
         n_perm = self.params.n_perm

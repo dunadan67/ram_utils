@@ -28,7 +28,7 @@ class ComputePowers(ReportRamTask):
         self.pow_mat = joblib.load(self.get_path_to_resource_in_workspace(subject + '-' + task + '-pow_mat.pkl'))
         self.samplerate = joblib.load(self.get_path_to_resource_in_workspace(subject + '-samplerate.pkl'))
 
-        self.pass_object('pow_mat', self.pow_mat)
+        self.pass_object(task+'_pow_mat', self.pow_mat)
         self.pass_object('samplerate', self.samplerate)
 
     def run(self):
@@ -44,12 +44,13 @@ class ComputePowers(ReportRamTask):
         self.pass_objects()
 
     def get_events(self):
-        return self.get_passed_object('events')
+        task=self.pipeline.task
+        return self.get_passed_object(task+'_events')
 
     def pass_objects(self):
         subject = self.pipeline.subject
         task=self.task
-        self.pass_object('pow_mat', self.pow_mat)
+        self.pass_object(task+'_pow_mat', self.pow_mat)
         self.pass_object('samplerate', self.samplerate)
 
         joblib.dump(self.pow_mat, self.get_path_to_resource_in_workspace(subject + '-' + task + '-pow_mat.pkl'))
