@@ -59,18 +59,19 @@ class FR1EventPreparation(EventPreparation):
         super(FR1EventPreparation,self).pass_events()
 
 
-class FREventPreparation(FR1EventPreparation):
+class JointFR1EventPreparation(FR1EventPreparation):
     def __init__(self):
-        super(FREventPreparation,self).__init__(['FR1','catFR1'],False)
+        super(JointFR1EventPreparation, self).__init__(['FR1', 'catFR1'], False)
 
     def load_events(self):
         self.fr1_events,self.catfr1_events = (self.read_events(task) for task in self.tasks)
+        self.catfr1_events.session+=100
         ev_fields=['item_num', 'serialpos', 'session', 'subject', 'rectime', 'experiment', 'mstime', 'type', 'eegoffset', 'iscorrect', 'answer', 'recalled', 'item_name', 'intrusion', 'montage', 'list', 'eegfile', 'msoffset']
         self.events = np.concatenate([event[ev_fields] for event in (self.fr1_events,self.catfr1_events)]).view(np.recarray)
 
     def pass_events(self):
         self.pass_object('cat_events',self.catfr1_events[self.catfr1_events.type=='WORD'])
-        super(FREventPreparation,self).pass_events()
+        super(JointFR1EventPreparation, self).pass_events()
 
 class PAL1EventPreparation(EventPreparation):
     def load_events(self):

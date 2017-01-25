@@ -12,7 +12,7 @@ from ReportUtils import CMLParser, ReportPipeline
 
 cml_parser = CMLParser(arg_count_threshold=1)
 
-cml_parser.arg('--subject','R1158T')
+cml_parser.arg('--subject','R1226D')
 # cml_parser.arg('--task','RAM_FR1')
 cml_parser.arg('--task','FR1')
 cml_parser.arg('--workspace-dir','/scratch/leond/FR_reports')
@@ -31,25 +31,13 @@ cml_parser.arg('--mount-point','')
 args = cml_parser.parse()
 
 
-
-from FR1EventPreparation import FR1EventPreparation
-
-from RepetitionRatio import RepetitionRatio
-
-from ComputeFRPowers import ComputeFRPowers
-
-from MontagePreparation import MontagePreparation
-
-from ComputeFR1HFPowers import ComputeFR1HFPowers
-
-from ComputeTTest import ComputeTTest
-
-from ComputeClassifier import ComputeClassifier
-
 from ComposeSessionSummary import ComposeSessionSummary
 
 from GenerateReportTasks import *
 
+from ReportTasks import JointFR1EventPreparation,MontagePreparation
+
+from ReportTasks import ComputePowers,ComputeHFPowers,ComputeTTest,ComputeClassifier
 
 # turn it into command line options
 
@@ -85,21 +73,21 @@ params = Params()
 # sets up processing pipeline
 report_pipeline = ReportPipeline(subject=args.subject,
                                  workspace_dir=join(args.workspace_dir, args.subject),
-                                 task='FR1_catFR1_joint',
+                                 task=args.task,
                                  experiment='FR1_catFR1_joint',
                                  mount_point=args.mount_point,
                                  exit_on_no_change=args.exit_on_no_change,
                                  recompute_on_no_status=args.recompute_on_no_status)
 
-report_pipeline.add_task(FR1EventPreparation(mark_as_completed=False))
+report_pipeline.add_task(JointFR1EventPreparation())
 
 report_pipeline.add_task(MontagePreparation(params=params, mark_as_completed=False))
 
 # report_pipeline.add_task(RepetitionRatio(mark_as_completed=True))
 
-report_pipeline.add_task(ComputeFRPowers(params=params, mark_as_completed=True))
+report_pipeline.add_task(ComputePowers(task=args.task,params=params, mark_as_completed=True))
 
-report_pipeline.add_task(ComputeFR1HFPowers(params=params, mark_as_completed=True))
+report_pipeline.add_task(ComputeHFPowers(task=args.task,params=params, mark_as_completed=True))
 
 report_pipeline.add_task(ComputeTTest(params=params, mark_as_completed=False))
 

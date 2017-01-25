@@ -40,7 +40,7 @@ class ComposeSessionSummary(ReportRamTask):
         subject = self.pipeline.subject
         task = self.pipeline.task
 
-        events = self.get_passed_object('events')
+        events = self.get_passed_object(task+'_events')
         math_events = self.get_passed_object('math_events')
         intr_events = self.get_passed_object('intr_events')
         rec_events = self.get_passed_object('rec_events')
@@ -52,9 +52,11 @@ class ComposeSessionSummary(ReportRamTask):
         ttest = self.get_passed_object('ttest')
 
         xval_output = self.get_passed_object('xval_output')
+        print xval_output.keys()
         perm_test_pvalue = self.get_passed_object('pvalue')
 
         sessions = np.unique(events.session)
+        print '%d sessions'%len(sessions)
 
         self.pass_object('NUMBER_OF_SESSIONS', len(sessions))
         self.pass_object('NUMBER_OF_ELECTRODES', len(monopolar_channels))
@@ -78,7 +80,7 @@ class ComposeSessionSummary(ReportRamTask):
                 irt_within_cat.extend(irts[within])
                 irt_between_cat.extend(irts[within == False])
 
-        for session in sessions:
+        for sess_num,session in enumerate(sessions):
             session_summary = SessionSummary()
 
             session_events = events[events.session == session]
@@ -149,7 +151,7 @@ class ComposeSessionSummary(ReportRamTask):
             session_summary.n_eli = np.sum(session_intr_events.intrusion == -1)
             session_summary.pc_eli = 100*session_summary.n_eli / float(n_sess_rec_events)
 
-            session_xval_output = xval_output[session]
+            session_xval_output = xval_output[sess_num]
 
             session_summary.auc = '%.2f' % (100*session_xval_output.auc)
             session_summary.fpr = session_xval_output.fpr
