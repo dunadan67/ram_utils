@@ -33,7 +33,7 @@ class ComputeTTest(ReportRamTask):
 
             sess_pow_mat = pow_mat[sel,:]
 
-            sess_recalls = np.array(sess_events.correct, dtype=np.bool)
+            sess_recalls = np.array(sess_events.recalled, dtype=np.bool)
 
             recalled_sess_pow_mat = sess_pow_mat[sess_recalls,:]
             nonrecalled_sess_pow_mat = sess_pow_mat[~sess_recalls,:]
@@ -41,7 +41,7 @@ class ComputeTTest(ReportRamTask):
             t,p = ttest_ind(recalled_sess_pow_mat, nonrecalled_sess_pow_mat, axis=0)
             self.ttest[sess] = (t,p)
 
-        recalls = np.array(events.correct, dtype=np.bool)
+        recalls = np.array(events.recalled, dtype=np.bool)
 
         recalled_pow_mat = pow_mat[recalls,:]
         nonrecalled_pow_mat = pow_mat[~recalls,:]

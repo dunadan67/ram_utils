@@ -28,8 +28,7 @@ class ComputePowers(ReportRamTask):
         self.pow_mat = joblib.load(self.get_path_to_resource_in_workspace(subject + '-' + task + '-pow_mat.pkl'))
         self.samplerate = joblib.load(self.get_path_to_resource_in_workspace(subject + '-samplerate.pkl'))
 
-        self.pass_object(task+'_pow_mat', self.pow_mat)
-        self.pass_object('samplerate', self.samplerate)
+        self.pass_objects()
 
     def run(self):
         events = self.get_events()
@@ -132,3 +131,13 @@ class ComputePowers(ReportRamTask):
                                           axis=0) if self.pow_mat is not None else sess_pow_mat
 
         self.pow_mat = np.reshape(self.pow_mat, (len(events), n_bps * n_freqs))
+
+class ComputeHFPowers(ComputePowers):
+    def pass_objects(self):
+        subject = self.pipeline.subject
+        task=self.task
+        self.pass_object('hf_pow_mat', self.pow_mat)
+        self.pass_object('hf_samplerate', self.samplerate)
+
+        joblib.dump(self.pow_mat, self.get_path_to_resource_in_workspace(subject + '-' + task + '-hf_pow_mat.pkl'))
+        joblib.dump(self.samplerate, self.get_path_to_resource_in_workspace(subject + '-samplerate.pkl'))
