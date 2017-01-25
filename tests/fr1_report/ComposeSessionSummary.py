@@ -42,7 +42,7 @@ class ComposeSessionSummary(ReportRamTask):
         task = self.pipeline.task
 
         all_events = self.get_passed_object('all_events')
-        events = self.get_passed_object('events')
+        events = self.get_passed_object(task+'_events')
         math_events = all_events[all_events.type == 'PROB']
         rec_events = all_events[all_events.type == 'REC_WORD']
         intr_events = rec_events[(rec_events.intrusion != -999) & (rec_events.intrusion != 0)]
@@ -225,7 +225,10 @@ class ComposeSessionSummary(ReportRamTask):
         cumulative_ttest_data = make_ttest_table(bp_tal_structs, ttest[-1])
         cumulative_ttest_data.sort(key=itemgetter(-2))
         print 'cumulative_ttest_data.shape:',np.shape(cumulative_ttest_data)
-        ttest_table = Series(data=ttest[-1][0],index=[data[2] for data in cumulative_ttest_data])
+        print 'ttest total type',type(ttest[-1][0])
+        print 'ttest[-1][0].shape',ttest[-1][0].shape
+        index = [data[2] for data in cumulative_ttest_data]
+        ttest_table = Series(data=ttest[-1][0],index=index)
         self.pass_object('ttest_table',ttest_table)
         ttest_table.to_csv(os.path.join(self.workspace_dir,'_'.join([self.pipeline.subject,task,'SME_ttest.csv'])))
         cumulative_ttest_data = format_ttest_table(cumulative_ttest_data)

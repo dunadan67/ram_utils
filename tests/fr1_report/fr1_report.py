@@ -12,8 +12,8 @@ from ReportUtils import CMLParser,ReportPipeline
 
 cml_parser = CMLParser(arg_count_threshold=1)
 cml_parser.arg('--subject','R1111M')
-cml_parser.arg('--task','FR1')
-cml_parser.arg('--workspace-dir','/scratch/leond/FR_reports')
+cml_parser.arg('--task','catFR1')
+cml_parser.arg('--workspace-dir','/scratch/leond/catFR_reports')
 cml_parser.arg('--mount-point','')
 #cml_parser.arg('--recompute-on-no-status')
 # cml_parser.arg('--exit-on-no-change')
@@ -33,7 +33,7 @@ args = cml_parser.parse()
 #
 # from ComputeFR1HFPowers import ComputeFR1HFPowers
 
-from ComputeTTest import ComputeTTest
+from ReportTasks import ComputeTTest
 
 # from ComputeClassifier import ComputeClassifier
 
@@ -42,7 +42,7 @@ from ComposeSessionSummary import ComposeSessionSummary
 from GenerateReportTasks import *
 
 from ReportTasks import EventPreparation,MontagePreparation,ComputeClassifier,ComputePowers,RepetitionRatio
-
+from ReportTasks import ComputeHFPowers
 
 # turn it into command line options
 
@@ -93,7 +93,7 @@ report_pipeline.add_task(MontagePreparation(params, mark_as_completed=False))
 if 'cat' in args.task:
     report_pipeline.add_task(RepetitionRatio(mark_as_completed=False))
 
-report_pipeline.add_task(ComputePowers(params=hfparams, mark_as_completed=True,name='ComputeFR1HFPowers',task=args.task))
+report_pipeline.add_task(ComputeHFPowers(params=hfparams, mark_as_completed=True,name='ComputeFR1HFPowers',task=args.task))
 
 report_pipeline.add_task(ComputeTTest(params=params, mark_as_completed=False))
 

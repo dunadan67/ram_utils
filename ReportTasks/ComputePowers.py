@@ -10,6 +10,15 @@ from ptsa.data.readers.IndexReader import JsonIndexReader
 from ReportUtils import ReportRamTask
 
 import hashlib
+from scipy.stats.mstats import zscore
+
+
+def normalize_sessions(pow_mat, events):
+    sessions = np.unique(events.session)
+    for sess in sessions:
+        sess_event_mask = (events.session == sess)
+        pow_mat[sess_event_mask] = zscore(pow_mat[sess_event_mask], axis=0, ddof=1)
+    return pow_mat
 
 
 class ComputePowers(ReportRamTask):
@@ -130,9 +139,20 @@ class ComputePowers(ReportRamTask):
             self.pow_mat = np.concatenate((self.pow_mat, sess_pow_mat),
                                           axis=0) if self.pow_mat is not None else sess_pow_mat
 
-        self.pow_mat = np.reshape(self.pow_mat, (len(events), n_bps * n_freqs))
+        self.pow_mat = normalize_sessions(np.reshape(self.pow_mat, (len(events), n_bps * n_freqs)),events)
+
 
 class ComputeHFPowers(ComputePowers):
+    def restore(self):
+        subject = self.pipeline.subject
+        task=self.task
+
+        pow_mat = joblib.load(self.get_path_to_resource_in_workspace(subject + '-' + task + '-hf_pow_mat.pkl'))
+        samplerate = joblib.load(self.get_path_to_resource_in_workspace(subject + '-samplerate.pkl'))
+        self.pass_object('hf_pow_mat', pow_mat)
+        self.pass_object('hf_samplerate', samplerate)
+
+
     def pass_objects(self):
         subject = self.pipeline.subject
         task=self.task
@@ -141,3 +161,11 @@ class ComputeHFPowers(ComputePowers):
 
         joblib.dump(self.pow_mat, self.get_path_to_resource_in_workspace(subject + '-' + task + '-hf_pow_mat.pkl'))
         joblib.dump(self.samplerate, self.get_path_to_resource_in_workspace(subject + '-samplerate.pkl'))
+
+    def compute_powers(self, events, sessions, monopolar_channels, bipolar_pairs):
+        n_bps = len(bipolar_pairs)
+        n_freqs = len(self.params.freqs)
+        super(ComputeHFPowers,self).compute_powers(events,sessions,monopolar_channels,bipolar_pairs)
+        self.pow_mat = np.reshape(self.pow_mat,(len(events),n_bps,n_freqs))
+        self.pow_mat = np.nanmean(self.pow_mat,2)
+        print 'pow_mat.shape',self.pow_mat.shape

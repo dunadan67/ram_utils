@@ -49,7 +49,7 @@ class RepetitionRatio(RamTask):
     def run(self):
         subject = self.pipeline.subject
         task = self.pipeline.task
-        events = self.get_passed_object(task+'_all_events')
+        events = self.get_passed_object('all_events')
         recalls = events[events.recalled == 1]
         sessions = np.unique(recalls.session)
         print '%d sessions' % len(sessions)

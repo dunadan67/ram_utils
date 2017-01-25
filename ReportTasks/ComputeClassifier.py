@@ -101,13 +101,27 @@ class ComputeClassifier(ReportRamTask):
         return self.get_passed_object(self.pipeline.task+'_events')
 
     def get_powers(self):
-        self.pow_mat = self.get_passed_object(self.pipeline.task+'_pow_mat')
+        self.pow_mat = normalize_sessions(self.get_passed_object(self.pipeline.task+'_pow_mat'),self.get_events())
+
+    def restore(self):
+        subject= self.pipeline.subject
+        task = self.pipeline.task
+
+        self.lr_classifier = joblib.load(self.get_path_to_resource_in_workspace(subject + '-' + task + '-lr_classifier.pkl'))
+        self.xval_output = joblib.load(self.get_path_to_resource_in_workspace(subject + '-' + task + '-xval_output.pkl'))
+        self.perm_AUCs = joblib.load(self.get_path_to_resource_in_workspace(subject + '-' + task + '-perm_AUCs.pkl'))
+        self.pvalue = joblib.load(self.get_path_to_resource_in_workspace(subject + '-' + task + '-pvalue.pkl'))
+
+        self.pass_object('lr_classifier', self.lr_classifier)
+        self.pass_object('xval_output', self.xval_output)
+        self.pass_object('perm_AUCs', self.perm_AUCs)
+        self.pass_object('pvalue', self.pvalue)
 
     def run(self):
         subject = self.pipeline.subject
         task = self.pipeline.task
 
-        events = self.get_events()
+        events=self.get_events()
         self.get_powers()
 
         with warnings.catch_warnings():

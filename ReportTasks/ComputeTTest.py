@@ -16,6 +16,7 @@ class ComputeTTest(ReportRamTask):
         task = self.pipeline.task
 
         pow_mat = self.get_passed_object('hf_pow_mat')
+        print 'hf_pow_mat.shape:',pow_mat.shape
 
         #freq_sel = np.tile((self.params.freqs>=self.params.ttest_frange[0]) & (self.params.freqs<=self.params.ttest_frange[1]), pow_mat.shape[1] / self.params.freqs.size)
         #pow_mat = pow_mat[:,freq_sel]
@@ -47,6 +48,7 @@ class ComputeTTest(ReportRamTask):
         nonrecalled_pow_mat = pow_mat[~recalls,:]
 
         t,p = ttest_ind(recalled_pow_mat, nonrecalled_pow_mat, axis=0)
+        print t.shape
         self.ttest[-1] = (t,p)
 
         self.pass_object('ttest', self.ttest)

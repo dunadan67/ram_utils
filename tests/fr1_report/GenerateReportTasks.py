@@ -200,7 +200,7 @@ class GeneratePlots(ReportRamTask):
             repetition_ratio = cumulative_summary.repetition_ratio
             all_repetition_ratios = self.get_passed_object('all_repetition_ratios')
             all_repetition_ratios=all_repetition_ratios[np.isfinite(all_repetition_ratios)]
-            all_rr_hist = np.histogram(all_repetition_ratios,range=[0.,1],bins='auto')
+            all_rr_hist = np.histogram(all_repetition_ratios,range=[0.,1])
 
             mean_rr = np.nanmean(repetition_ratio)
             hist = BarPlotData(y=all_rr_hist[0],x=all_rr_hist[1][1:],barcolors=['grey' for h in all_rr_hist[0]], xlim=[0,1],
@@ -208,6 +208,7 @@ class GeneratePlots(ReportRamTask):
                                ylabel='# of lists',xlabel_fontsize=18, ylabel_fontsize=24)
             panel_plot.add_plot_data(0,1,plot_data=hist)
             plot = panel_plot.generate_plot()
+            plot.hist(all_repetition_ratios)
             percentile=np.nanmean(all_repetition_ratios<mean_rr)*100
             plot.annotate(s='{:2}'.format(percentile),xy=(mean_rr,max(all_rr_hist[0])))
             plot_out_fname = self.get_path_to_resource_in_workspace('reports/'+task + '-'+subject + '-category-plots.pdf')

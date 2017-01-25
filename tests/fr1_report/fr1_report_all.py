@@ -29,21 +29,16 @@ from ReportUtils import ReportSummaryInventory, ReportSummary
 from ReportUtils import ReportPipelineBase
 
 
-from FR1EventPreparation import FR1EventPreparation
+from ReportTasks import ComputeTTest
 
-from ComputeFR1Powers import ComputeFR1Powers
-
-from MontagePreparation import MontagePreparation
-
-from ComputeFR1HFPowers import ComputeFR1HFPowers
-
-from ComputeTTest import ComputeTTest
-
-from ComputeClassifier import ComputeClassifier
+# from ComputeClassifier import ComputeClassifier
 
 from ComposeSessionSummary import ComposeSessionSummary
 
 from GenerateReportTasks import *
+
+from ReportTasks import EventPreparation,MontagePreparation,ComputeClassifier,ComputePowers,RepetitionRatio
+from ReportTasks import ComputeHFPowers
 
 
 # turn it into command line options
@@ -75,6 +70,11 @@ class Params(object):
 
 
 params = Params()
+hfparams=Params()
+
+hfparams.fr1_buf=1.0
+hfparams.fr1_end_time = 1.6
+hfparams.freqs = hfparams.hfs
 
 task = args.task
 
@@ -116,15 +116,20 @@ for subject in subjects:
                                      workspace_dir=join(args.workspace_dir, task + '_' + subject)
                                      )
 
-    report_pipeline.add_task(FR1EventPreparation(mark_as_completed=False))
+    report_pipeline.add_task(EventPreparation(mark_as_completed=False, name='FR1EventPreparation', tasks=[args.task]))
 
-    report_pipeline.add_task(MontagePreparation(params=params, mark_as_completed=False))
+    report_pipeline.add_task(MontagePreparation(params, mark_as_completed=False))
 
-    report_pipeline.add_task(ComputeFR1Powers(params=params, mark_as_completed=True))
+    if 'cat' in args.task:
+        report_pipeline.add_task(RepetitionRatio(mark_as_completed=False))
 
-    report_pipeline.add_task(ComputeFR1HFPowers(params=params, mark_as_completed=True))
+    report_pipeline.add_task(
+        ComputeHFPowers(params=hfparams, mark_as_completed=True, name='ComputeFR1HFPowers', task=args.task))
 
     report_pipeline.add_task(ComputeTTest(params=params, mark_as_completed=False))
+
+    report_pipeline.add_task(
+        ComputePowers(params=params, mark_as_completed=True, name='ComputeFR1Powers', task=args.task))
 
     report_pipeline.add_task(ComputeClassifier(params=params, mark_as_completed=True))
 
