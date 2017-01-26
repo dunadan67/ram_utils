@@ -39,6 +39,8 @@ from ReportTasks import JointFR1EventPreparation,MontagePreparation
 
 from ReportTasks import ComputePowers,ComputeHFPowers,ComputeTTest,ComputeClassifier
 
+from ReportTasks import RepetitionRatio
+
 # turn it into command line options
 
 class Params(object):
@@ -73,23 +75,23 @@ params = Params()
 # sets up processing pipeline
 report_pipeline = ReportPipeline(subject=args.subject,
                                  workspace_dir=join(args.workspace_dir, args.subject),
-                                 task=args.task,
+                                 task='FR1_catFR1_joint',
                                  experiment='FR1_catFR1_joint',
                                  mount_point=args.mount_point,
                                  exit_on_no_change=args.exit_on_no_change,
                                  recompute_on_no_status=args.recompute_on_no_status)
 
-report_pipeline.add_task(JointFR1EventPreparation())
+report_pipeline.add_task(JointFR1EventPreparation(tasks=['FR1','catFR1']))
 
 report_pipeline.add_task(MontagePreparation(params=params, mark_as_completed=False))
 
-# report_pipeline.add_task(RepetitionRatio(mark_as_completed=True))
+report_pipeline.add_task(RepetitionRatio(mark_as_completed=True))
 
-report_pipeline.add_task(ComputePowers(task=args.task,params=params, mark_as_completed=True))
+report_pipeline.add_task(ComputePowers(task=args.task,params=params, mark_as_completed=True,name='ComputeFR1Powers'))
 
-report_pipeline.add_task(ComputeHFPowers(task=args.task,params=params, mark_as_completed=True))
+report_pipeline.add_task(ComputeHFPowers(task=args.task,params=params, mark_as_completed=True,name='ComputeFR1HFPowers'))
 
-report_pipeline.add_task(ComputeTTest(params=params, mark_as_completed=False))
+report_pipeline.add_task(ComputeTTest(mark_as_completed=False,task=args.task))
 
 report_pipeline.add_task(ComputeClassifier(params=params, mark_as_completed=True))
 

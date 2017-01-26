@@ -126,7 +126,7 @@ for subject in subjects:
     report_pipeline.add_task(
         ComputeHFPowers(params=hfparams, mark_as_completed=True, name='ComputeFR1HFPowers', task=args.task))
 
-    report_pipeline.add_task(ComputeTTest(params=params, mark_as_completed=False))
+    report_pipeline.add_task(ComputeTTest(mark_as_completed=False))
 
     report_pipeline.add_task(
         ComputePowers(params=params, mark_as_completed=True, name='ComputeFR1Powers', task=args.task))

@@ -49,7 +49,7 @@ class RepetitionRatio(RamTask):
     def run(self):
         subject = self.pipeline.subject
         task = self.pipeline.task
-        events = self.get_passed_object('all_events')
+        events = self.get_passed_object('cat_events' if 'joint' in task else task+'_events')
         recalls = events[events.recalled == 1]
         sessions = np.unique(recalls.session)
         print '%d sessions' % len(sessions)
@@ -128,13 +128,14 @@ class RepetitionRatio(RamTask):
 
                 for i, r in enumerate(repetition_rates.flat):
                     repetition_rates.flat[i] = np.nan
-                for session in sessions:
+                for s,session in enumerate(sessions):
+                    print 'session: ',session
                     sess_recalls = recalls[recalls.session == session]
                     lists = np.unique(sess_recalls.list)
-                    repetition_rates[session][:len(lists)] = [repetition_ratio(sess_recalls[sess_recalls.list == l])
+                    repetition_rates[s][:len(lists)] = [repetition_ratio(sess_recalls[sess_recalls.list == l])
                                                               for l in lists]
                 all_repetition_rates[subject] = repetition_rates.copy()
-            except Exception as e:
+            except AttributeError as e:
                 print 'Subject ', subject, 'failed:'
                 print e
         joblib.dump(all_repetition_rates,

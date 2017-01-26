@@ -40,7 +40,7 @@ class ComposeSessionSummary(ReportRamTask):
         subject = self.pipeline.subject
         task = self.pipeline.task
 
-        events = self.get_passed_object(task+'_events')
+        events = self.get_passed_object('FR1_events')
         math_events = self.get_passed_object('math_events')
         intr_events = self.get_passed_object('intr_events')
         rec_events = self.get_passed_object('rec_events')

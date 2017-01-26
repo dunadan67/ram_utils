@@ -1,7 +1,9 @@
 from RamPipeline import *
 
 import numpy as np
+import time
 
+from ptsa.data.filters import MorletWaveletFilterCpp,MonopolarToBipolarMapper
 from ptsa.extensions.morlet.morlet import MorletWaveletTransform
 from sklearn.externals import joblib
 
@@ -20,7 +22,6 @@ def normalize_sessions(pow_mat, events):
         pow_mat[sess_event_mask] = zscore(pow_mat[sess_event_mask], axis=0, ddof=1)
     return pow_mat
 
-
 class ComputePowers(ReportRamTask):
     def __init__(self, params, task,mark_as_completed=True,name=None):
         super(ComputePowers, self).__init__(mark_as_completed,name=name)
@@ -29,6 +30,44 @@ class ComputePowers(ReportRamTask):
         self.samplerate = None
         self.wavelet_transform = MorletWaveletTransform()
         self.task = task
+
+
+    def compute_powers(self, events, sessions, monopolar_channels, bipolar_pairs):
+        n_bps = len(bipolar_pairs)
+        n_freqs = len(self.params.freqs)
+        eeg_reader = EEGReader(events=events, channels=monopolar_channels,
+                               start_time=self.params.fr1_start_time, end_time=self.params.fr1_end_time,
+                               buffer_time=0.0)
+
+        eegs = eeg_reader.read().add_mirror_buffer(duration=self.params.fr1_buf)
+
+        eegs = MonopolarToBipolarMapper(time_series=eegs,bipolar_pairs=bipolar_pairs).filter()
+        print 'eegs.shape:',eegs.shape
+        print 'len(freqs)',n_freqs
+        pow_mat,phase_mat = MorletWaveletFilterCpp(eegs, freqs=self.params.freqs, output='power',cpus=10).filter()
+        del phase_mat
+        if pow_mat is None:
+            exit()
+        pow_mat = pow_mat.transpose('events','bipolar_pairs','frequency','time').remove_buffer(duration=self.params.fr1_buf)
+        if self.params.log_powers:
+            pow_mat = np.log10(pow_mat)
+
+        pow_mat = np.nanmean(pow_mat,-1).reshape(len(events),n_freqs*n_bps)
+
+        self.pow_mat = normalize_sessions(pow_mat, events)
+
+    def get_events(self):
+        task = self.task
+        return self.get_passed_object(task + '_events')
+
+    def pass_objects(self):
+        subject = self.pipeline.subject
+        task = self.pipeline.task
+        self.pass_object(task + '_pow_mat', self.pow_mat)
+        self.pass_object('samplerate', self.samplerate)
+
+        joblib.dump(self.pow_mat, self.get_path_to_resource_in_workspace(subject + '-' + task + '-pow_mat.pkl'))
+        joblib.dump(self.samplerate, self.get_path_to_resource_in_workspace(subject + '-samplerate.pkl'))
 
     def restore(self):
         subject = self.pipeline.subject
@@ -42,29 +81,19 @@ class ComputePowers(ReportRamTask):
     def run(self):
         events = self.get_events()
         sessions = np.unique(events.session)
-        print 'sessions:', sessions
+        print 'sessions for %s:'%self.task, sessions
 
         monopolar_channels = self.get_passed_object('monopolar_channels')
         bipolar_pairs = self.get_passed_object('bipolar_pairs')
-
+        tic=time.clock()
         self.compute_powers(events, sessions, monopolar_channels, bipolar_pairs)
+        toc=time.clock()
+        print '%f seconds elapsed'%(toc-tic)
 
         self.pass_objects()
 
-    def get_events(self):
-        task=self.pipeline.task
-        return self.get_passed_object(task+'_events')
 
-    def pass_objects(self):
-        subject = self.pipeline.subject
-        task=self.task
-        self.pass_object(task+'_pow_mat', self.pow_mat)
-        self.pass_object('samplerate', self.samplerate)
-
-        joblib.dump(self.pow_mat, self.get_path_to_resource_in_workspace(subject + '-' + task + '-pow_mat.pkl'))
-        joblib.dump(self.samplerate, self.get_path_to_resource_in_workspace(subject + '-samplerate.pkl'))
-
-
+class ComputePowersOld(ComputePowers):
     def compute_powers(self, events, sessions, monopolar_channels, bipolar_pairs):
         n_freqs = len(self.params.freqs)
         n_bps = len(bipolar_pairs)
@@ -155,7 +184,7 @@ class ComputeHFPowers(ComputePowers):
 
     def pass_objects(self):
         subject = self.pipeline.subject
-        task=self.task
+        task=self.pipeline.task
         self.pass_object('hf_pow_mat', self.pow_mat)
         self.pass_object('hf_samplerate', self.samplerate)
 
@@ -169,3 +198,5 @@ class ComputeHFPowers(ComputePowers):
         self.pow_mat = np.reshape(self.pow_mat,(len(events),n_bps,n_freqs))
         self.pow_mat = np.nanmean(self.pow_mat,2)
         print 'pow_mat.shape',self.pow_mat.shape
+
+

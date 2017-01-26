@@ -8,12 +8,13 @@ from sklearn.externals import joblib
 from ReportUtils import ReportRamTask
 
 class ComputeTTest(ReportRamTask):
-    def __init__(self, params, mark_as_completed=True):
+    def __init__(self, mark_as_completed=True,task=None):
         super(ComputeTTest,self).__init__(mark_as_completed)
+        self.task=task
 
     def run(self):
         subject = self.pipeline.subject
-        task = self.pipeline.task
+        task = self.pipeline.task if self.task is None else self.task
 
         pow_mat = self.get_passed_object('hf_pow_mat')
         print 'hf_pow_mat.shape:',pow_mat.shape
@@ -21,7 +22,7 @@ class ComputeTTest(ReportRamTask):
         #freq_sel = np.tile((self.params.freqs>=self.params.ttest_frange[0]) & (self.params.freqs<=self.params.ttest_frange[1]), pow_mat.shape[1] / self.params.freqs.size)
         #pow_mat = pow_mat[:,freq_sel]
 
-        events = self.get_passed_object(self.pipeline.task+'_events')
+        events = self.get_passed_object(task+'_events')
         sessions = np.unique(events.session)
 
         # norm_func = normalize.standardize_pow_mat if self.params.norm_method=='zscore' else normalize.normalize_pow_mat
