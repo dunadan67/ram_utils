@@ -12,8 +12,8 @@ from ReportUtils import CMLParser,ReportPipeline
 
 cml_parser = CMLParser(arg_count_threshold=1)
 cml_parser.arg('--subject','R1111M')
-cml_parser.arg('--task','FR1')
-cml_parser.arg('--workspace-dir','/scratch/leond/FR1_reports')
+cml_parser.arg('--task','catFR1')
+cml_parser.arg('--workspace-dir','/scratch/leond/FR_reports')
 cml_parser.arg('--mount-point','')
 #cml_parser.arg('--recompute-on-no-status')
 # cml_parser.arg('--exit-on-no-change')
@@ -41,8 +41,8 @@ from ComposeSessionSummary import ComposeSessionSummary
 
 from GenerateReportTasks import *
 
-from ReportTasks import EventPreparation,MontagePreparation,ComputeClassifier,ComputePowers,RepetitionRatio
-from ReportTasks import ComputeHFPowers,ComputePowersWithFilters
+from ReportTasks import EventPreparation,MontagePreparation,ComputeClassifier,RepetitionRatio
+from ReportTasks import ComputePowers,ComputeHFPowers
 
 # turn it into command line options
 
@@ -92,15 +92,15 @@ report_pipeline.add_task(EventPreparation(mark_as_completed=False,name='FR1Event
 report_pipeline.add_task(MontagePreparation(params, mark_as_completed=False))
 
 if 'cat' in args.task:
-    report_pipeline.add_task(RepetitionRatio(mark_as_completed=False))
+    report_pipeline.add_task(RepetitionRatio(mark_as_completed=True))
 
 report_pipeline.add_task(ComputeHFPowers(params=hfparams, mark_as_completed=True,name='ComputeFR1HFPowers',task=args.task))
 
 report_pipeline.add_task(ComputeTTest(mark_as_completed=False))
 
-report_pipeline.add_task(ComputePowersWithFilters(params=params, mark_as_completed=True,name='ComputeFR1Powers',task=args.task))
+report_pipeline.add_task(ComputePowers(params=params, mark_as_completed=True,name='ComputeFR1Powers',task=args.task))
 
-report_pipeline.add_task(ComputeClassifier(params=params, mark_as_completed=True))
+report_pipeline.add_task(ComputeClassifier(params=params, mark_as_completed=True,name='Compute%sClassifier'%args.task))
 
 report_pipeline.add_task(ComposeSessionSummary(params=params, mark_as_completed=False))
 
